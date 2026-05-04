@@ -1,0 +1,25 @@
+[package]
+name = "ping-gui"
+version = "0.1.0"
+authors = ["mniyk <my.name.is.yohei.kono@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+dioxus = { version = "0.7.1", features = [] }
+async-std = "1"
+tokio = { version = "1", features = ["full"] }
+
+# Windows以外（Linux/macOS）はsurge-ping
+[target.'cfg(not(windows))'.dependencies]
+surge-ping = "0.8"
+rand = "0.8"
+
+# Windowsはwinping（管理者権限不要）
+[target.'cfg(windows)'.dependencies]
+winping = "0.10"
+
+[features]
+default = ["desktop"]
+web = ["dioxus/web"]
+desktop = ["dioxus/desktop"]
+mobile = ["dioxus/mobile"]
