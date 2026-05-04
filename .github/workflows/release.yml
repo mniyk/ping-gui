@@ -51,8 +51,7 @@ jobs:
 
       - name: Build Tailwind CSS
         run: |
-          npm init -y
-          npm install tailwindcss @tailwindcss/cli
+          npm ci
           npx @tailwindcss/cli -i ./tailwind.css -o ./assets/tailwind.css --minify
 
       - name: Install Dioxus CLI
