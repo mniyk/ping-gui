@@ -44,16 +44,6 @@ jobs:
             libsoup-3.0-dev \
             libxdo-dev
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Build Tailwind CSS
-        run: |
-          npm ci
-          npx @tailwindcss/cli -i ./tailwind.css -o ./assets/tailwind.css --minify
-
       - name: Install Dioxus CLI
         run: cargo install --locked dioxus-cli
 
