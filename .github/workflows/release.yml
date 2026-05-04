@@ -14,11 +14,11 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            asset_name: ping-gui-windows-x86_64.exe
+            asset_name: ping-gui-windows-x86_64.msi
           - os: ubuntu-latest
-            asset_name: ping-gui-linux-x86_64
+            asset_name: ping-gui-linux-x86_64.deb
           - os: macos-latest
-            asset_name: ping-gui-macos-aarch64
+            asset_name: ping-gui-macos-aarch64.dmg
 
     runs-on: ${{ matrix.os }}
 
@@ -48,23 +48,29 @@ jobs:
         run: cargo install --locked dioxus-cli
 
       - name: Build
-        run: dx build --release --platform desktop
+        run: dx bundle --release --platform desktop
 
-      - name: Locate binary (Windows)
+      - name: Locate bundle (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          $exe = Get-ChildItem -Path target -Filter "ping-gui.exe" -Recurse | Where-Object { $_.FullName -match "release|desktop-bundle|dx" } | Select-Object -First 1
-          if (-not $exe) { throw "binary not found" }
-          Copy-Item $exe.FullName -Destination "${{ matrix.asset_name }}"
+          $msi = Get-ChildItem -Path target -Filter "*.msi" -Recurse | Select-Object -First 1
+          if (-not $msi) { throw "MSI not found" }
+          Copy-Item $msi.FullName -Destination "${{ matrix.asset_name }}"
 
-      - name: Locate binary (Unix)
-        if: matrix.os != 'windows-latest'
+      - name: Locate bundle (macOS)
+        if: matrix.os == 'macos-latest'
         run: |
-          BIN=$(find target -type f -name "ping-gui" -path "*release*" | head -n1)
-          if [ -z "$BIN" ]; then echo "binary not found"; exit 1; fi
-          cp "$BIN" "${{ matrix.asset_name }}"
-          chmod +x "${{ matrix.asset_name }}"
+          DMG=$(find target -name "*.dmg" | head -n1)
+          if [ -z "$DMG" ]; then echo "dmg not found"; exit 1; fi
+          cp "$DMG" "${{ matrix.asset_name }}"
+
+      - name: Locate bundle (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          DEB=$(find target -name "*.deb" | head -n1)
+          if [ -z "$DEB" ]; then echo "deb not found"; exit 1; fi
+          cp "$DEB" "${{ matrix.asset_name }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

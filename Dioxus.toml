@@ -1,4 +1,8 @@
 [application]
+name = "ping-gui"
+
+[bundle]
+identifier = "com.mniyk.ping-gui"
 
 [web.app]
 
