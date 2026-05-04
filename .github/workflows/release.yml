@@ -14,9 +14,9 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            asset_name: ping-gui-windows-x86_64.msi
+            asset_name: ping-gui-windows-x86_64.zip
           - os: ubuntu-latest
-            asset_name: ping-gui-linux-x86_64.deb
+            asset_name: ping-gui-linux-x86_64.tar.gz
           - os: macos-latest
             asset_name: ping-gui-macos-aarch64.dmg
 
@@ -50,27 +50,27 @@ jobs:
       - name: Build
         run: dx bundle --release --platform desktop
 
-      - name: Locate bundle (Windows)
+      - name: Package (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          $msi = Get-ChildItem -Path target -Filter "*.msi" -Recurse | Select-Object -First 1
-          if (-not $msi) { throw "MSI not found" }
-          Copy-Item $msi.FullName -Destination "${{ matrix.asset_name }}"
+          $exe = Get-ChildItem -Path target -Filter "ping-gui.exe" -Recurse | Where-Object { $_.FullName -match "dx" -and $_.FullName -match "release" } | Select-Object -First 1
+          if (-not $exe) { throw "binary not found" }
+          Compress-Archive -Path "$($exe.DirectoryName)\*" -DestinationPath "${{ matrix.asset_name }}"
 
-      - name: Locate bundle (macOS)
+      - name: Package (macOS)
         if: matrix.os == 'macos-latest'
         run: |
           DMG=$(find target -name "*.dmg" | head -n1)
           if [ -z "$DMG" ]; then echo "dmg not found"; exit 1; fi
           cp "$DMG" "${{ matrix.asset_name }}"
 
-      - name: Locate bundle (Linux)
+      - name: Package (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          DEB=$(find target -name "*.deb" | head -n1)
-          if [ -z "$DEB" ]; then echo "deb not found"; exit 1; fi
-          cp "$DEB" "${{ matrix.asset_name }}"
+          BIN=$(find target -type f -name "ping-gui" -path "*/dx/*" -path "*release*" | head -n1)
+          if [ -z "$BIN" ]; then echo "binary not found"; exit 1; fi
+          tar -czf "${{ matrix.asset_name }}" -C "$(dirname "$BIN")" .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
