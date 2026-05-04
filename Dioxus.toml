@@ -3,6 +3,7 @@ name = "ping-gui"
 
 [bundle]
 identifier = "com.mniyk.ping-gui"
+publisher = "mniyk"
 
 [web.app]
 
