@@ -58,10 +58,7 @@ jobs:
         run: npx @tailwindcss/cli -i ./tailwind.css -o ./assets/tailwind.css --minify
 
       - name: Install Dioxus CLI
-        uses: cargo-bins/cargo-binstall@main
-
-      - name: Install dx
-        run: cargo binstall dioxus-cli --no-confirm
+        run: cargo install --locked dioxus-cli
 
       - name: Build
         run: dx build --release --platform desktop
