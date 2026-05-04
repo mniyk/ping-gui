@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: ping-gui.exe
+            asset_name: ping-gui-windows-x86_64.exe
+          - os: ubuntu-latest
+            artifact_name: ping-gui
+            asset_name: ping-gui-linux-x86_64
+          - os: macos-latest
+            artifact_name: ping-gui
+            asset_name: ping-gui-macos-aarch64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      # Linuxはwebview2/webkit関連のシステムライブラリが必要
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libsoup-3.0-dev \
+            libxdo-dev
+
+      - name: Install Dioxus CLI
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Install dx
+        run: cargo binstall dioxus-cli --no-confirm
+
+      - name: Build
+        run: dx build --release --platform desktop
+
+      # ビルド成果物の場所はOSにより異なるので探す
+      - name: Locate binary (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path target -Filter "ping-gui.exe" -Recurse | Where-Object { $_.FullName -match "release|desktop-bundle|dx" } | Select-Object -First 1
+          if (-not $exe) { throw "binary not found" }
+          Copy-Item $exe.FullName -Destination "${{ matrix.asset_name }}"
+
+      - name: Locate binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          BIN=$(find target -type f -name "ping-gui" -path "*release*" | head -n1)
+          if [ -z "$BIN" ]; then echo "binary not found"; exit 1; fi
+          cp "$BIN" "${{ matrix.asset_name }}"
+          chmod +x "${{ matrix.asset_name }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.asset_name }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
