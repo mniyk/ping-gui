@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -51,11 +52,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Tailwind CSS CLI
-        run: npm install -g tailwindcss @tailwindcss/cli
-
       - name: Build Tailwind CSS
-        run: npx @tailwindcss/cli -i ./tailwind.css -o ./assets/tailwind.css --minify
+        run: |
+          npm init -y
+          npm install tailwindcss @tailwindcss/cli
+          npx @tailwindcss/cli -i ./tailwind.css -o ./assets/tailwind.css --minify
 
       - name: Install Dioxus CLI
         run: cargo install --locked dioxus-cli
@@ -91,6 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    if: startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Download all artifacts
