@@ -34,7 +34,6 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      # Linuxはwebview2/webkit関連のシステムライブラリが必要
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -47,6 +46,17 @@ jobs:
             libsoup-3.0-dev \
             libxdo-dev
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Tailwind CSS CLI
+        run: npm install -g @tailwindcss/cli
+
+      - name: Build Tailwind CSS
+        run: npx @tailwindcss/cli -i ./tailwind.css -o ./assets/tailwind.css --minify
+
       - name: Install Dioxus CLI
         uses: cargo-bins/cargo-binstall@main
 
@@ -56,7 +66,6 @@ jobs:
       - name: Build
         run: dx build --release --platform desktop
 
-      # ビルド成果物の場所はOSにより異なるので探す
       - name: Locate binary (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
